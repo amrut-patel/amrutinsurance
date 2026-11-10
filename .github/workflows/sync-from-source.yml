@@ -1,0 +1,54 @@
+
+name: Sync from Source Repository
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout destination repository
+      - name: Checkout destination repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      # Clone source repository
+      - name: Clone source repository
+        run: |
+          git clone \
+            --branch main \
+            --single-branch \
+            https://github.com/sushil-patel/amrut-insurance-and-investment.git \
+            source
+
+      # Replace destination files with source files
+      - name: Sync source code
+        run: |
+          rsync -av --delete \
+            --exclude='.git/' \
+            --exclude='.github/workflows/' \
+            source/ ./
+
+      # Commit and push changes
+      - name: Commit and push changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add -A
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+
+          git commit -m "chore: sync from source repository"
+
+          git push origin main
